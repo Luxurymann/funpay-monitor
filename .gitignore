@@ -1,0 +1,10 @@
+# Environment variables
+.env
+
+# Go workspace variables
+.DS_Store
+*.exe
+*.log
+report.md
+search_debug.html
+profile_debug.html
