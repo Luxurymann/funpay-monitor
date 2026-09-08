@@ -105,7 +105,7 @@ func main() {
 				// Delay between checks to avoid triggering anti-bot
 				time.Sleep(3 * time.Second)
 			}
-			
+
 			if f != nil {
 				f.Close()
 			}
@@ -150,12 +150,11 @@ func fetchProfileOffers(ctx context.Context, profileURL string, defaultCategoryU
 		if name == "" {
 			name = strings.TrimSpace(s.Find(".tc-server").Text())
 		}
-		
+
 		// Clean up the name by removing category trail (e.g. "blood scythe, Предметы, Трейд")
 		if strings.Contains(name, ",") {
 			name = strings.TrimSpace(strings.Split(name, ",")[0])
 		}
-
 
 		priceStr := strings.TrimSpace(s.Find(".tc-price").Text())
 		priceStr = strings.ReplaceAll(priceStr, " ", "")
@@ -176,13 +175,13 @@ func fetchProfileOffers(ctx context.Context, profileURL string, defaultCategoryU
 }
 
 func checkOffer(ctx context.Context, myOffer Offer, myUserID string, f *os.File) {
-	fmt.Printf("Checking: %s (My price: %.2f ₽) -> ", myOffer.Name, myOffer.Price)
+	fmt.Printf("Checking: %30s (My price: %.2f ₽) -> ", myOffer.Name, myOffer.Price)
 
 	minPrice, err := fetchCompetitorMinPrice(ctx, myOffer, myUserID)
 	if err != nil {
 		color.Red("Error: %v", err)
 		if f != nil {
-			f.WriteString(fmt.Sprintf("| %s | %.2f ₽ | - | - | ❌ Ошибка: %v |\n", myOffer.Name, myOffer.Price, err))
+			f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | - | - | ❌ Ошибка: %v |\n", myOffer.Name[:30], myOffer.Price, err))
 		}
 		return
 	}
@@ -190,7 +189,11 @@ func checkOffer(ctx context.Context, myOffer Offer, myUserID string, f *os.File)
 	if minPrice == 0 {
 		color.Yellow("No competitors found for this item.")
 		if f != nil {
-			f.WriteString(fmt.Sprintf("| %s | %.2f ₽ | - | - | ⚪ Нет конкурентов |\n", myOffer.Name, myOffer.Price))
+			if len(myOffer.Name) >= 30 {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | - | - | ⚪ Нет конкурентов |\n", myOffer.Name[:30], myOffer.Price))
+			} else {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | - | - | ⚪ Нет конкурентов |\n", myOffer.Name, myOffer.Price))
+			}
 		}
 		return
 	}
@@ -200,17 +203,29 @@ func checkOffer(ctx context.Context, myOffer Offer, myUserID string, f *os.File)
 	if minPrice <= myOffer.Price*0.85 {
 		color.Red("ALERT! Competitor is %.1f%% cheaper! (Min price: %.2f ₽)", -diffPercent, minPrice)
 		if f != nil {
-			f.WriteString(fmt.Sprintf("| %s | %.2f ₽ | **%.2f ₽** | %.1f%% | 🔴 Сильно дешевле |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			if len(myOffer.Name) >= 30 {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | **%.2f ₽** | %.1f%% | 🔴 Сильно дешевле |\n", myOffer.Name[:30], myOffer.Price, minPrice, diffPercent))
+			} else {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | **%.2f ₽** | %.1f%% | 🔴 Сильно дешевле |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			}
 		}
 	} else if minPrice >= myOffer.Price*1.15 {
 		color.Green("ALERT! Competitor is %.1f%% more expensive! (Min price: %.2f ₽)", diffPercent, minPrice)
 		if f != nil {
-			f.WriteString(fmt.Sprintf("| %s | %.2f ₽ | %.2f ₽ | +%.1f%% | 🟢 Сильно дороже |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			if len(myOffer.Name) >= 30 {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | %.2f ₽ | +%.1f%% | 🟢 Сильно дороже |\n", myOffer.Name[:30], myOffer.Price, minPrice, diffPercent))
+			} else {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | %.2f ₽ | +%.1f%% | 🟢 Сильно дороже |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			}
 		}
 	} else {
 		fmt.Printf("OK (Min competitor: %.2f ₽, Diff: %.1f%%)\n", minPrice, diffPercent)
 		if f != nil {
-			f.WriteString(fmt.Sprintf("| %s | %.2f ₽ | %.2f ₽ | %.1f%% | 🟡 Разница до 15%% |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			if len(myOffer.Name) >= 30 {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | %.2f ₽ | %.1f%% | 🟡 Разница до 15%% |\n", myOffer.Name[:30], myOffer.Price, minPrice, diffPercent))
+			} else {
+				f.WriteString(fmt.Sprintf("| %30s | %.2f ₽ | %.2f ₽ | %.1f%% | 🟡 Разница до 15%% |\n", myOffer.Name, myOffer.Price, minPrice, diffPercent))
+			}
 		}
 	}
 }
@@ -253,9 +268,9 @@ func fetchCompetitorMinPrice(ctx context.Context, myOffer Offer, myUserID string
 		if competitorName == "" {
 			competitorName = strings.TrimSpace(s.Find(".tc-server").Text())
 		}
-		
+
 		competitorName = strings.ToLower(competitorName)
-		
+
 		matchFound := false
 		for _, variant := range strings.Split(myOffer.Name, "|") {
 			variant = strings.TrimSpace(strings.ToLower(variant))
@@ -268,13 +283,13 @@ func fetchCompetitorMinPrice(ctx context.Context, myOffer Offer, myUserID string
 		if !matchFound {
 			return // Skip this item, it doesn't match any of our variants
 		}
-		
+
 		// Skip our own items using the user ID
 		sellerID, _ := s.Attr("data-user")
 		if sellerID == myUserID {
 			return // Skip this item, it's ours!
 		}
-		
+
 		priceStr, exists := s.Find(".tc-price").Attr("data-s")
 		if !exists {
 			priceStr = strings.TrimSpace(s.Find(".tc-price").Text())
